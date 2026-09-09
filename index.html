@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>云草链 · 虫草生态溯源 · 全程可视GIS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI','Microsoft YaHei',sans-serif; }
+        :root {
+            --primary: #1a7a4a;
+            --gold: #d4af37;
+            --light-bg: #f5faf7;
+            --dark: #1e3a2a;
+            --shadow: 0 8px 24px rgba(0,20,10,0.08);
+            --radius: 16px;
+        }
+        body { background: #fafcfa; color: #1e2a24; line-height:1.5; }
+        .container { max-width:1400px; margin:0 auto; padding:0 24px; }
+        .section { padding: 60px 0; border-bottom:1px solid rgba(0,0,0,0.03); }
+        .section-title { font-size: 2.2rem; font-weight:600; text-align:center; color:var(--dark); margin-bottom:20px; }
+        .section-sub { text-align:center; color:#4a5f54; max-width:700px; margin:0 auto 40px; font-size:1.1rem; }
+
+        /* header */
+        header { background:white; box-shadow:0 2px 12px rgba(0,0,0,0.04); position:sticky; top:0; z-index:100; }
+        .header-flex { display:flex; justify-content:space-between; align-items:center; padding:12px 0; flex-wrap:wrap; gap:12px; }
+        .logo-area { display:flex; align-items:center; gap:10px; }
+        .logo-icon { width:44px; height:44px; background:white; border-radius:8px; display:flex; align-items:center; justify-content:center; }
+        .logo-icon img { width:100%; height:100%; object-fit:contain; }
+        .logo-text { font-size:24px; font-weight:700; color:var(--primary); letter-spacing:-0.5px; }
+        .logo-sub { font-size:11px; color:var(--gold); font-weight:600; letter-spacing:1.5px; }
+        .nav-links { display:flex; gap:28px; align-items:center; }
+        .nav-links a { text-decoration:none; color:var(--dark); font-weight:500; transition:0.2s; }
+        .nav-links a:hover { color:var(--primary); }
+        .btn-primary { background:var(--primary); color:white; border:none; padding:10px 24px; border-radius:40px; font-weight:600; transition:0.2s; cursor:pointer; }
+        .btn-primary:hover { background:#136a3d; transform:translateY(-2px); box-shadow:0 8px 18px rgba(26,122,74,0.2); }
+        .btn-outline { background:transparent; border:2px solid var(--primary); color:var(--primary); padding:8px 22px; border-radius:40px; font-weight:600; transition:0.2s; cursor:pointer; }
+        .btn-outline:hover { background:var(--primary); color:white; }
+        .btn-gold { background:var(--gold); color:white; border:none; padding:10px 28px; border-radius:40px; font-weight:600; cursor:pointer; transition:0.2s; }
+        .btn-gold:hover { background:#bf9f2e; transform:scale(1.02); }
+
+        /* hero */
+        .hero { background:linear-gradient(135deg, #eaf5ed 0%, #d4e8dd 100%); padding:60px 0 80px; text-align:center; }
+        .hero h1 { font-size:3.2rem; font-weight:700; color:var(--dark); }
+        .hero h1 span { color:var(--primary); background:linear-gradient(120deg, rgba(212,175,55,0.25), rgba(212,175,55,0.05)); padding:0 12px; }
+        .hero p { font-size:1.2rem; max-width:700px; margin:20px auto 36px; color:#2f4a3b; }
+
+        .card-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px,1fr)); gap:28px; margin-top:20px; }
+        .card { background:white; border-radius:var(--radius); padding:28px 24px; box-shadow:var(--shadow); transition:0.25s; border:1px solid #f0f5f0; }
+        .card:hover { transform:translateY(-6px); box-shadow:0 16px 32px rgba(0,30,10,0.08); }
+        .card-icon { font-size:2.6rem; color:var(--primary); margin-bottom:16px; }
+        .card h3 { font-size:1.3rem; margin-bottom:8px; }
+        .card p { color:#3a4f44; font-size:0.95rem; }
+
+        /* IP */
+        .ip-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:24px; margin:30px 0; }
+        .ip-card { background:white; border-radius:20px; padding:24px 16px; text-align:center; box-shadow:var(--shadow); cursor:pointer; transition:0.2s; border:2px solid transparent; }
+        .ip-card.active { border-color:var(--gold); background:#fcf9ef; }
+        .ip-card .avatar { width:80px; height:80px; border-radius:50%; margin:0 auto 12px; display:flex; align-items:center; justify-content:center; font-size:3rem; background:#d9e6dd; }
+        .ip-card h4 { font-weight:600; }
+        .ip-card .story { font-size:0.85rem; color:#4f6b5b; margin-top:6px; display:none; }
+        .ip-card.active .story { display:block; }
+
+        /* ===== GIS地图模块 ===== */
+        .gis-wrapper {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-top: 20px;
+            border: 1px solid #e8ede8;
+        }
+        .gis-container {
+            display: flex;
+            height: 520px;
+            width: 100%;
+        }
+        .gis-sidebar {
+            width: 320px;
+            background: #f8fbf9;
+            padding: 16px 18px;
+            overflow-y: auto;
+            border-right: 1px solid #e8ede8;
+            flex-shrink: 0;
+        }
+        .gis-sidebar .panel-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 12px;
+            border-bottom: 1px solid #e0e8e0;
+            padding-bottom: 8px;
+        }
+        .gis-sidebar .config-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d0ddd4;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+        .gis-sidebar .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+        .gis-sidebar .btn {
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid #d0ddd4;
+            background: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: 0.2s;
+        }
+        .gis-sidebar .btn:hover { border-color: var(--primary); }
+        .gis-sidebar .btn-primary {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        .gis-sidebar .btn-primary:hover { background: #136a3d; }
+        .gis-sidebar .status-message {
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-top: 8px;
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .gis-map-container {
+            flex: 1;
+            position: relative;
+            height: 520px;
+        }
+        .gis-map-container #map {
+            width: 100%;
+            height: 100%;
+        }
+        .gis-coordinates {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(255,255,255,0.9);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            border: 1px solid #ddd;
+            pointer-events: none;
+        }
+        .gis-map-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            z-index: 10;
+        }
+        .gis-map-controls .map-control-button {
+            width: 36px;
+            height: 36px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+            color: #333;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .gis-map-controls .map-control-button:hover { background: #f0f0f0; }
+
+        .route-type {
+            display: flex;
+            gap: 6px;
+            margin: 8px 0;
+        }
+        .route-type-btn {
+            flex: 1;
+            padding: 5px 10px;
+            border: 1px solid #d0ddd4;
+            border-radius: 16px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+            text-align: center;
+            transition: 0.2s;
+        }
+        .route-type-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* 其余模块 */
+        .trace-card { background:white; border-radius:var(--radius); padding:28px; box-shadow:var(--shadow); }
+        .trace-id { background:#f3f8f4; padding:16px; border-radius:12px; font-family:monospace; font-size:1.2rem; display:flex; justify-content:space-between; align-items:center; }
+        .trace-badge { background:var(--gold); color:white; border-radius:30px; padding:4px 16px; font-weight:600; font-size:0.8rem; }
+        .cert-box { background:linear-gradient(145deg, #f5fbf7, #e8f1ec); border-radius:var(--radius); padding:24px; border-left:6px solid var(--gold); }
+        .blindbox { display:inline-block; background:#b48b3a; color:white; padding:8px 24px; border-radius:40px; font-weight:600; margin-top:12px; cursor:pointer; transition:0.2s; }
+        .blindbox:hover { background:#9c762e; transform:scale(1.02); }
+        .carbon-badge { display:flex; align-items:center; gap:12px; background:#e2efe7; padding:12px 20px; border-radius:60px; width:fit-content; }
+        .carbon-score { font-weight:700; font-size:1.8rem; color:var(--primary); }
+        .footprint-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+        @media (max-width:600px){ .footprint-grid{grid-template-columns:1fr;} }
+        .medal-area { display:flex; flex-wrap:wrap; gap:20px; align-items:center; justify-content:center; }
+        .medal { background:linear-gradient(135deg, #f7f2e0, #efe6ce); border-radius:60px; padding:12px 28px; display:inline-flex; align-items:center; gap:14px; font-weight:600; border:1px solid var(--gold); cursor:pointer; transition:0.2s; }
+        .medal:hover { transform:scale(1.03); }
+
+        /* modal */
+        .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px); z-index:999; justify-content:center; align-items:center; }
+        .modal-box { background:white; max-width:640px; width:92%; border-radius:24px; padding:32px; box-shadow:0 30px 60px rgba(0,0,0,0.3); max-height:85vh; overflow-y:auto; animation:fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+        .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+        .modal-header h2 { font-size:1.6rem; color:var(--dark); }
+        .modal-close { background:none; border:none; font-size:1.8rem; cursor:pointer; color:#888; transition:0.2s; }
+        .modal-close:hover { color:var(--dark); }
+        .modal-body { line-height:1.6; }
+        .highlight { color:var(--primary); font-weight:600; }
+        .form-group { margin-bottom:16px; }
+        .form-group label { display:block; font-weight:500; margin-bottom:4px; }
+        .form-group input, .form-group textarea { width:100%; padding:10px 14px; border:1px solid #d0ddd4; border-radius:10px; font-size:1rem; }
+        .form-group textarea { min-height:60px; resize:vertical; }
+
+        footer { background:var(--dark); color:#d4e0d8; padding:40px 0 20px; margin-top:40px; }
+        @media (max-width:900px){
+            .gis-container { flex-direction: column; height: auto; }
+            .gis-sidebar { width: 100%; border-right: none; border-bottom: 1px solid #e8ede8; max-height: 300px; }
+            .gis-map-container { height: 400px; }
+            .hero h1{font-size:2.2rem;}
+            .nav-links{display:none;}
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="container header-flex">
+        <div class="logo-area">
+            <div class="logo-icon"><img src="logo.png" alt="云草链" onerror="this.style.display='none'"></div>
+            <div><div class="logo-text">云草链</div><div class="logo-sub">生态溯源 · 全程可视GIS</div></div>
+        </div>
+        <div class="nav-links">
+            <a href="#">首页</a><a href="#trace">溯源</a><a href="#carbon">碳积分</a><a href="#medal">勋章</a><a href="#about">关于</a>
+        </div>
+        <div>
+            <button class="btn-outline" id="loginBtn" style="margin-right:8px;"><i class="fas fa-user"></i> 登录</button>
+            <button class="btn-primary" id="registerBtn"><i class="fas fa-user-plus"></i> 注册</button>
+        </div>
+    </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+    <div class="container">
+        <h1>全程可视 · 每一根虫草<span>都有位置故事</span></h1>
+        <p>选人采挖 · GIS地图追踪 · 一键溯源 · 政府认证 · 碳积分兑换</p>
+        <div style="display:flex; gap:14px; justify-content:center; flex-wrap:wrap;">
+            <button class="btn-primary" onclick="document.getElementById('map-section').scrollIntoView({behavior:'smooth'})"><i class="fas fa-map-marked-alt"></i> 查看全程地图</button>
+            <button class="btn-gold" onclick="openModal('blindbox')"><i class="fas fa-gift"></i> 盲盒抽奖</button>
+        </div>
+    </div>
+</section>
+
+<!-- 1. 选人采挖 -->
+<section class="section" id="pick">
+    <div class="container">
+        <h2 class="section-title"><i class="fas fa-user-astronaut"></i> 选人采挖 · 藏民故事</h2>
+        <p class="section-sub">点击卡通IP，查看对应采挖人的故事，选中后后续交互将使用该形象</p>
+        <div class="ip-grid" id="ipGrid">
+            <div class="ip-card active" data-id="zhaxi" data-name="扎西·德钦" data-story="三代采挖人，守护高山草甸20年，每年仅采挖30天，休牧期护草。">
+                <div class="avatar" style="background:#d9e6dd;">🧑‍🌾</div>
+                <h4>扎西 · 德钦</h4>
+                <div class="story">三代采挖人，守护高山草甸20年，每年仅采挖30天，休牧期护草。</div>
+            </div>
+            <div class="ip-card" data-id="zhuoma" data-name="卓玛·拉姆" data-story="女性采挖队队长，带领12名妇女可持续采挖，同时监测草场健康。">
+                <div class="avatar" style="background:#f0e6d8;">👩‍🌾</div>
+                <h4>卓玛 · 拉姆</h4>
+                <div class="story">女性采挖队队长，带领12名妇女可持续采挖，同时监测草场健康。</div>
+            </div>
+            <div class="ip-card" data-id="gesang" data-name="格桑·平措" data-story="大学生返乡，用无人机巡护虫草产区，建立生态数据档案。">
+                <div class="avatar" style="background:#c8ddd2;">👨‍💻</div>
+                <h4>格桑 · 平措</h4>
+                <div class="story">大学生返乡，用无人机巡护虫草产区，建立生态数据档案。</div>
+            </div>
+            <div class="ip-card" data-id="yangjin" data-name="央金·措姆" data-story="非遗传承人，记录采挖民俗，同时培训新采挖人生态规范。">
+                <div class="avatar" style="background:#e6d9c4;">👵</div>
+                <h4>央金 · 措姆</h4>
+                <div class="story">非遗传承人，记录采挖民俗，同时培训新采挖人生态规范。</div>
+            </div>
+        </div>
+        <div style="text-align:center;margin-top:12px;">
+            <button class="btn-primary" onclick="openModal('picker')"><i class="fas fa-check"></i> 确认选中的农户</button>
+        </div>
+    </div>
+</section>
+
+<!-- 2. 全程可视 · GIS地图 -->
+<section class="section" id="map-section" style="background:#f3f9f4;">
+    <div class="container">
+        <h2 class="section-title"><i class="fas fa-map"></i> 全程可视 · 采挖到餐桌</h2>
+        <p class="section-sub">智能GIS路线规划，展示虫草从采挖、加工到物流、消费的完整路径</p>
+        <div class="gis-wrapper">
+            <div class="gis-container">
+                <!-- 侧边栏 -->
+                <div class="gis-sidebar">
+                    <div class="panel-title">🗺️ 路线规划</div>
+                    <div style="display:flex; gap:6px; margin-bottom:10px;">
+                        <div class="step" style="flex:1;text-align:center;padding:4px 0;background:#1a7a4a;color:white;border-radius:4px;font-size:0.8rem;">起点</div>
+                        <div class="step" style="flex:1;text-align:center;padding:4px 0;background:#d4af37;color:white;border-radius:4px;font-size:0.8rem;">终点</div>
+                        <div class="step" style="flex:1;text-align:center;padding:4px 0;background:#1e5799;color:white;border-radius:4px;font-size:0.8rem;">规划</div>
+                    </div>
+                    <input type="text" id="start-location" class="config-input" placeholder="起点 (如: 香格里拉)" value="香格里拉">
+                    <input type="text" id="end-location" class="config-input" placeholder="终点 (如: 昆明)" value="昆明">
+                    <div class="route-type">
+                        <button class="route-type-btn active" data-type="driving">🚗 驾车</button>
+                        <button class="route-type-btn" data-type="walking">🚶 步行</button>
+                        <button class="route-type-btn" data-type="cycling">🚴 骑行</button>
+                    </div>
+                    <div class="btn-group">
+                        <button id="plan-route" class="btn btn-primary">🗺️ 规划路线</button>
+                        <button id="clear-route" class="btn">🗑️ 清除</button>
+                    </div>
+                    <div id="route-status" class="status-message">💡 输入起点和终点，点击规划路线</div>
+                    <div style="margin-top:12px;font-size:0.8rem;color:#4f6b5b;border-top:1px solid #e0e8e0;padding-top:10px;">
+                        <strong>📌 预设路线：</strong><br>
+                        • 香格里拉 → 昆明 (采挖→加工)<br>
+                        • 昆明 → 大理 (加工→物流)<br>
+                        • 大理 → 丽江 (物流→消费)
+                    </div>
+                </div>
+                <!-- 地图容器 -->
+                <div class="gis-map-container">
+                    <div id="map"></div>
+                    <div class="gis-coordinates" id="coordinates">经度: --, 纬度: --</div>
+                    <div class="gis-map-controls">
+                        <a href="#" id="set-start" class="map-control-button" title="设置起点">A</a>
+                        <a href="#" id="set-end" class="map-control-button" title="设置终点">B</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 3. 一键溯源 -->
+<section class="section" id="trace">
+    <div class="container">
+        <h2 class="section-title"><i class="fas fa-qrcode"></i> 一键溯源 · 数字身份证</h2>
+        <div class="card-grid" style="grid-template-columns:1fr 1fr;">
+            <div class="trace-card">
+                <div class="trace-id">
+                    <span><i class="fas fa-hashtag"></i> YC-2026-0909-023</span>
+                    <span class="trace-badge"><i class="fas fa-link"></i> 区块链存证</span>
+                </div>
+                <div style="margin:20px 0;">
+                    <p><i class="fas fa-map-pin"></i> 产地：迪庆·香格里拉 海拔3800m</p>
+                    <p><i class="fas fa-calendar"></i> 采挖：2026-09-05 <span id="pickerNameDisplay">扎西·德钦</span></p>
+                    <p><i class="fas fa-industry"></i> 加工：云百草 GMP车间</p>
+                    <p><i class="fas fa-leaf"></i> 碳足迹：0.32 kg CO₂e</p>
+                    <p><i class="fas fa-seedling"></i> 碳汇等级：A级</p>
+                </div>
+                <button class="btn-primary" style="width:100%;" onclick="openModal('traceDetail')"><i class="fas fa-scan"></i> 扫码查看完整溯源</button>
+                <div style="margin-top:14px;font-size:0.85rem;color:#3c6a4e;background:#f0f6f2;padding:8px;border-radius:8px;">
+                    <i class="fas fa-database"></i> 上链时间：2026-09-09 14:23 · 哈希：0x7f3a...b1c2
+                </div>
+            </div>
+            <div class="trace-card" style="background:#f8fbf9;">
+                <h4><i class="fas fa-shield-alt"></i> 政府认证</h4>
+                <div class="cert-box" style="margin-top:10px;">
+                    <p><i class="fas fa-award" style="color:var(--gold);"></i> 迪庆州农牧局 · 生态合规认证</p>
+                    <p style="font-size:0.9rem;">证书编号：DQ-ST-2026-088</p>
+                    <button class="btn-outline" style="margin-top:8px;" onclick="openModal('cert')"><i class="fas fa-certificate"></i> 查看电子证书</button>
+                </div>
+                <div style="margin-top:20px;">
+                    <span class="blindbox" onclick="openModal('blindbox')"><i class="fas fa-gift"></i> 消费达标领盲盒</span>
+                    <p style="font-size:0.8rem;color:#4f6b5b;margin-top:6px;">累计消费满 ¥1288 可开盲盒</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 5+6 碳积分 + 碳足迹 -->
+<section class="section" id="carbon" style="background:#eef5f0;">
+    <div class="container">
+        <h2 class="section-title"><i class="fas fa-seedling"></i> 生态碳积分 · 碳足迹溯源</h2>
+        <div class="card-grid" style="grid-template-columns:1fr 1fr;">
+            <div class="card">
+                <div class="card-icon"><i class="fas fa-user-shield"></i></div>
+                <h3>农户生态碳档案</h3>
+                <div class="carbon-badge" style="margin:12px 0;">
+                    <span>🌱 碳积分</span>
+                    <span class="carbon-score" id="carbonScore">1,280</span>
+                </div>
+                <p><i class="fas fa-check-circle" style="color:var(--primary);"></i> 合规护草行为：23次</p>
+                <p><i class="fas fa-tree"></i> 固碳量：46.2 kg CO₂</p>
+                <p style="font-size:0.9rem;color:#3c6a4e;">积分可兑换：有机肥、太阳能灯、藏装补贴、树苗</p>
+                <button class="btn-outline" style="margin-top:12px;" onclick="openModal('carbonExchange')"><i class="fas fa-exchange-alt"></i> 兑换物资</button>
+                <button class="btn-outline" style="margin-top:12px;margin-left:8px;" onclick="earnCarbonPoints()"><i class="fas fa-plus-circle"></i> 积累积分（模拟）</button>
+            </div>
+            <div class="card">
+                <div class="card-icon"><i class="fas fa-globe-asia"></i></div>
+                <h3>碳足迹溯源卡片</h3>
+                <div class="footprint-grid">
+                    <div><span style="font-weight:600;">草甸固碳</span><br><span style="color:var(--primary);">2.8 t CO₂/ha</span></div>
+                    <div><span style="font-weight:600;">这批虫草</span><br><span style="color:var(--gold);">0.32 kg CO₂e</span></div>
+                    <div><span style="font-weight:600;">生态信息</span><br><span style="color:#4f6b5b;">上链 ✓</span></div>
+                    <div><span style="font-weight:600;">碳汇等级</span><br><span style="color:var(--primary);">A级</span></div>
+                </div>
+                <p style="font-size:0.85rem;border-top:1px solid #dde8e0;padding-top:12px;margin-top:8px;">
+                    <i class="fas fa-link"></i> 生态数据存证：0x9e3f...c4d2
+                </p>
+                <button class="btn-outline" style="margin-top:12px;width:100%;" onclick="openModal('footprintDetail')"><i class="fas fa-leaf"></i> 查看碳足迹详情</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 7. 消费者碳勋章 -->
+<section class="section" id="medal">
+    <div class="container">
+        <h2 class="section-title"><i class="fas fa-medal"></i> 消费者碳勋章 · 分享荣誉</h2>
+        <p class="section-sub">购买生态合规虫草，自动生成专属碳勋章</p>
+        <div class="medal-area">
+            <div class="medal" onclick="openModal('medalDetail')"><i class="fas fa-badge-check"></i> 高原守护者 · 青铜</div>
+            <div class="medal" style="background:linear-gradient(135deg,#e8f0e2,#d0e0d0);" onclick="openModal('medalDetail')"><i class="fas fa-star" style="color:#b8860b;"></i> 生态先锋 · 白银</div>
+            <div class="medal" style="background:linear-gradient(135deg,#f7f0d0,#ecdba0);" onclick="openModal('medalDetail')"><i class="fas fa-crown" style="color:var(--gold);"></i> 碳汇王者 · 黄金</div>
+        </div>
+        <div style="text-align:center;margin-top:24px;">
+            <div style="display:inline-block;background:white;padding:18px 40px;border-radius:60px;box-shadow:var(--shadow);">
+                <i class="fas fa-share-alt" style="color:var(--primary);font-size:1.6rem;"></i>
+                <span style="font-weight:600;margin:0 16px;">您已获得「高原守护者」勋章</span>
+                <button class="btn-primary" onclick="openModal('shareMedal')"><i class="fas fa-camera"></i> 保存分享</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- about -->
+<section class="section" id="about" style="background:white;">
+    <div class="container">
+        <h2 class="section-title">关于云草链 · 生态共建</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;text-align:center;">
+            <div><i class="fas fa-mountain" style="font-size:2.4rem;color:var(--primary);"></i><h4>迪庆产区</h4><p>300+ 合作农户</p></div>
+            <div><i class="fas fa-leaf" style="font-size:2.4rem;color:var(--primary);"></i><h4>碳汇面积</h4><p>12,000 亩</p></div>
+            <div><i class="fas fa-award" style="font-size:2.4rem;color:var(--gold);"></i><h4>政府认证</h4><p>3 项生态标准</p></div>
+            <div><i class="fas fa-handshake" style="font-size:2.4rem;color:var(--primary);"></i><h4>合作伙伴</h4><p>云百草 · 植秀堂 · 滇草坊</p></div>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <div class="container" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:20px;">
+        <div>© 2026 云草链 · 虫草产业整合平台</div>
+        <div><i class="fas fa-leaf"></i> 生态优先 · 碳惠未来</div>
+    </div>
+</footer>
+
+<!-- ===== 弹窗容器 ===== -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this) closeModal()">
+    <div class="modal-box" id="modalBox">
+        <div class="modal-header">
+            <h2 id="modalTitle">标题</h2>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody">内容</div>
+    </div>
+</div>
+
+<!-- ===== 登录/注册弹窗 ===== -->
+<div class="modal-overlay" id="authModal" onclick="if(event.target===this) closeAuth()">
+    <div class="modal-box" style="max-width:480px;">
+        <div class="modal-header">
+            <h2 id="authTitle">登录</h2>
+            <button class="modal-close" onclick="closeAuth()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="authForm">
+                <div class="form-group"><label>邮箱 / 手机号</label><input type="text" id="authUser" placeholder="请输入邮箱或手机号" value="test@yun.com"></div>
+                <div class="form-group"><label>密码</label><input type="password" id="authPass" placeholder="请输入密码" value="123456"></div>
+                <button class="btn-primary" style="width:100%;" onclick="handleAuth()">登录</button>
+                <p style="margin-top:16px;text-align:center;color:#4f6b5b;">还没有账号？ <a href="#" onclick="switchAuth('register')" style="color:var(--primary);font-weight:600;">立即注册</a></p>
+            </div>
+            <div id="registerForm" style="display:none;">
+                <div class="form-group"><label>姓名</label><input type="text" id="regName" placeholder="请输入姓名"></div>
+                <div class="form-group"><label>邮箱</label><input type="email" id="regEmail" placeholder="请输入邮箱"></div>
+                <div class="form-group"><label>手机号</label><input type="tel" id="regPhone" placeholder="请输入手机号"></div>
+                <div class="form-group"><label>密码</label><input type="password" id="regPass" placeholder="至少8位"></div>
+                <button class="btn-primary" style="width:100%;" onclick="handleRegister()">注册</button>
+                <p style="margin-top:16px;text-align:center;color:#4f6b5b;">已有账号？ <a href="#" onclick="switchAuth('login')" style="color:var(--primary);font-weight:600;">去登录</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 百度地图API - 使用官方演示密钥 -->
+<script src="https://api.map.baidu.com/api?v=3.0&ak=jc7vUOgLbcBFef6gWTeR9xpxxGIBpoxA"></script>
+
+<script>
+    // ============================================================
+    // 1. 云草链原有功能
+    // ============================================================
+
+    function openModal(type) {
+        const overlay = document.getElementById('modalOverlay');
+        const title = document.getElementById('modalTitle');
+        const body = document.getElementById('modalBody');
+        overlay.style.display = 'flex';
+
+        const activeCard = document.querySelector('.ip-card.active');
+        const pickerName = activeCard ? activeCard.dataset.name : '扎西·德钦';
+        const pickerStory = activeCard ? activeCard.dataset.story : '';
+
+        switch(type) {
+            case 'picker': title.textContent='✅ 已确认采挖农户'; body.innerHTML=`
+                <div style="text-align:center;padding:10px 0;">
+                    <div style="font-size:4rem;">${activeCard?activeCard.querySelector('.avatar').textContent:'🧑‍🌾'}</div>
+                    <h3 style="color:var(--primary);">${pickerName}</h3>
+                    <p style="background:#f0f6f2;padding:16px;border-radius:12px;margin:16px 0;">${pickerStory}</p>
+                    <p><i class="fas fa-check-circle" style="color:var(--primary);"></i> 已绑定该农户</p>
+                    <button class="btn-primary" style="margin-top:16px;" onclick="closeModal()">确定</button>
+                </div>
+            `; break;
+            case 'traceDetail': title.textContent='🔍 完整溯源信息'; body.innerHTML=`
+                <div style="background:#f8fbf9;padding:16px;border-radius:12px;">
+                    <p><span class="highlight">溯源码：</span>YC-2026-0909-023</p>
+                    <p><span class="highlight">采挖农户：</span>${pickerName}</p>
+                    <p><span class="highlight">产地：</span>迪庆·香格里拉 海拔3800m</p>
+                    <p><span class="highlight">碳足迹：</span>0.32 kg CO₂e</p>
+                    <p><span class="highlight">区块链哈希：</span>0x7f3a8c2b...b1c2d3e4</p>
+                </div>
+                <div style="margin-top:16px;background:#eaf5ed;padding:12px;border-radius:8px;">
+                    <i class="fas fa-check-circle" style="color:var(--primary);"></i> 数据不可篡改
+                </div>
+            `; break;
+            case 'cert': title.textContent='📜 政府电子证书'; body.innerHTML=`
+                <div style="background:linear-gradient(135deg,#f5fbf7,#e8f1ec);padding:24px;border-radius:16px;border:2px solid var(--gold);text-align:center;">
+                    <i class="fas fa-award" style="font-size:3rem;color:var(--gold);"></i>
+                    <h3>生态合规认证</h3>
+                    <p>迪庆州农牧局 颁发</p>
+                    <hr style="margin:16px 0;border:1px dashed #c0d6c8;">
+                    <p>证书编号：DQ-ST-2026-088</p>
+                    <p>有效期至：2027-08-31</p>
+                </div>
+            `; break;
+            case 'blindbox': title.textContent='🎁 高原伴手礼盲盒'; body.innerHTML=`
+                <div style="text-align:center;">
+                    <div style="font-size:4rem;">🎁</div>
+                    <h3 style="color:var(--gold);">恭喜获得！</h3>
+                    <div style="background:#fcf9ef;padding:20px;border-radius:16px;margin:16px 0;">
+                        <p>🧧 藏红花 5g</p><p>🧀 牦牛奶酪 200g</p>
+                        <p>🍪 青稞饼干 1盒</p><p>🌿 生态香囊 1个</p>
+                    </div>
+                    <button class="btn-primary" onclick="closeModal()">立即领取</button>
+                </div>
+            `; break;
+            case 'carbonExchange':
+                const score = parseInt(document.getElementById('carbonScore').textContent.replace(/,/g,'')) || 1280;
+                title.textContent='🌱 碳积分兑换';
+                body.innerHTML=`
+                    <div style="text-align:center;">
+                        <div class="carbon-badge" style="margin:0 auto 20px;">
+                            <span>🌱 碳积分</span>
+                            <span class="carbon-score">${score}</span>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                            <div style="background:#f0f6f2;padding:16px;border-radius:12px;cursor:pointer;" onclick="openAddressForm('有机肥 20kg', 300)">
+                                <i class="fas fa-seedling" style="color:var(--primary);font-size:1.6rem;"></i>
+                                <p>有机肥 20kg</p><p style="font-weight:600;color:var(--gold);">300 积分</p>
+                            </div>
+                            <div style="background:#f0f6f2;padding:16px;border-radius:12px;cursor:pointer;" onclick="openAddressForm('太阳能灯', 500)">
+                                <i class="fas fa-sun" style="color:var(--gold);font-size:1.6rem;"></i>
+                                <p>太阳能灯</p><p style="font-weight:600;color:var(--gold);">500 积分</p>
+                            </div>
+                            <div style="background:#f0f6f2;padding:16px;border-radius:12px;cursor:pointer;" onclick="openAddressForm('藏装补贴', 800)">
+                                <i class="fas fa-tshirt" style="color:var(--primary);font-size:1.6rem;"></i>
+                                <p>藏装补贴</p><p style="font-weight:600;color:var(--gold);">800 积分</p>
+                            </div>
+                            <div style="background:#f0f6f2;padding:16px;border-radius:12px;cursor:pointer;" onclick="openAddressForm('碳汇树苗', 200)">
+                                <i class="fas fa-tree" style="color:var(--primary);font-size:1.6rem;"></i>
+                                <p>碳汇树苗</p><p style="font-weight:600;color:var(--gold);">200 积分</p>
+                            </div>
+                        </div>
+                    </div>
+                `; break;
+            case 'footprintDetail': title.textContent='🌍 碳足迹详情'; body.innerHTML=`
+                <div style="background:#f8fbf9;padding:16px;border-radius:12px;">
+                    <p><span class="highlight">草甸固碳量：</span>2.8 t CO₂/ha</p>
+                    <p><span class="highlight">本批碳足迹：</span>0.32 kg CO₂e</p>
+                    <p><span class="highlight">碳汇等级：</span>A级</p>
+                </div>
+            `; break;
+            case 'medalDetail': title.textContent='🏅 碳勋章'; body.innerHTML=`
+                <div style="text-align:center;">
+                    <div style="font-size:5rem;">🏅</div>
+                    <h3 style="color:var(--gold);">高原守护者 · 青铜</h3>
+                    <button class="btn-primary" onclick="saveMedal()"><i class="fas fa-camera"></i> 保存到本地</button>
+                </div>
+            `; break;
+            case 'shareMedal': title.textContent='📸 分享勋章'; body.innerHTML=`
+                <div style="text-align:center;">
+                    <div style="background:linear-gradient(135deg,#f7f2e0,#efe6ce);padding:30px;border-radius:20px;border:2px solid var(--gold);">
+                        <div style="font-size:4rem;">🏅</div>
+                        <h3>高原守护者 · 青铜</h3>
+                        <p>@云草链 · 生态合规虫草</p>
+                    </div>
+                    <button class="btn-primary" onclick="saveMedal()"><i class="fas fa-camera"></i> 保存图片</button>
+                </div>
+            `; break;
+            default: title.textContent='信息'; body.innerHTML='<p>内容</p>';
+        }
+    }
+    function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
+
+    function openAddressForm(item, cost) {
+        const score = parseInt(document.getElementById('carbonScore').textContent.replace(/,/g,'')) || 1280;
+        if (score < cost) { alert(`积分不足！需要 ${cost} 积分`); return; }
+        const overlay = document.getElementById('modalOverlay');
+        const title = document.getElementById('modalTitle');
+        const body = document.getElementById('modalBody');
+        overlay.style.display = 'flex';
+        title.textContent = `📦 兑换 ${item}`;
+        body.innerHTML = `
+            <div style="background:#fcf9ef;padding:12px;border-radius:12px;margin-bottom:16px;">
+                <p>兑换：<strong>${item}</strong> (${cost}积分)</p>
+            </div>
+            <div class="form-group"><label>收货人</label><input type="text" id="addrName" placeholder="姓名"></div>
+            <div class="form-group"><label>手机</label><input type="tel" id="addrPhone" placeholder="手机号"></div>
+            <div class="form-group"><label>地址</label><textarea id="addrDetail" placeholder="详细地址"></textarea></div>
+            <button class="btn-primary" style="width:100%;" onclick="saveAddress('${item}', ${cost})">确认兑换</button>
+        `;
+    }
+
+    function saveAddress(item, cost) {
+        const name = document.getElementById('addrName').value.trim();
+        const phone = document.getElementById('addrPhone').value.trim();
+        const addr = document.getElementById('addrDetail').value.trim();
+        if (!name || !phone || !addr) { alert('请完整填写'); return; }
+        const scoreEl = document.getElementById('carbonScore');
+        let current = parseInt(scoreEl.textContent.replace(/,/g,'')) || 1280;
+        if (current < cost) { alert('积分不足'); return; }
+        current -= cost;
+        scoreEl.textContent = current.toLocaleString();
+        alert(`✅ 兑换成功！\n${item}\n${name}\n${addr}`);
+        closeModal();
+    }
+
+    function earnCarbonPoints() {
+        const scoreEl = document.getElementById('carbonScore');
+        let current = parseInt(scoreEl.textContent.replace(/,/g,'')) || 1280;
+        const gain = Math.floor(Math.random() * 50) + 20;
+        current += gain;
+        scoreEl.textContent = current.toLocaleString();
+        alert(`🌱 碳积分 +${gain}！当前：${current}`);
+    }
+
+    function saveMedal() {
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 400; canvas.height = 300;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#f7f2e0'; ctx.fillRect(0,0,400,300);
+            ctx.fillStyle = '#d4af37'; ctx.font = 'bold 60px sans-serif';
+            ctx.textAlign = 'center'; ctx.fillText('🏅', 200, 120);
+            ctx.fillStyle = '#1e3a2a'; ctx.font = 'bold 28px sans-serif';
+            ctx.fillText('高原守护者', 200, 200);
+            const link = document.createElement('a');
+            link.download = '云草链_勋章.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            alert('✅ 已保存到本地！');
+        } catch(e) { alert('请截图保存'); }
+    }
+
+    document.querySelectorAll('.ip-card').forEach(card => {
+        card.addEventListener('click', function() {
+            document.querySelectorAll('.ip-card').forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            document.getElementById('pickerNameDisplay').textContent = this.dataset.name;
+        });
+    });
+
+    // ===== 登录/注册 =====
+    const authModal = document.getElementById('authModal');
+    function openAuth(type) { authModal.style.display='flex'; document.getElementById('authTitle').textContent=type==='login'?'登录':'注册'; document.getElementById('authForm').style.display=type==='login'?'block':'none'; document.getElementById('registerForm').style.display=type==='register'?'block':'none'; }
+    function closeAuth() { authModal.style.display='none'; }
+    document.getElementById('loginBtn').addEventListener('click', ()=>openAuth('login'));
+    document.getElementById('registerBtn').addEventListener('click', ()=>openAuth('register'));
+    function switchAuth(type) { openAuth(type); }
+    function handleAuth() {
+        const user = document.getElementById('authUser').value || '用户';
+        alert(`✅ 登录成功！欢迎 ${user}`);
+        closeAuth();
+        document.getElementById('loginBtn').innerHTML = `<i class="fas fa-user-check"></i> ${user}`;
+        document.getElementById('loginBtn').className = 'btn-primary';
+        document.getElementById('registerBtn').textContent = '退出';
+        document.getElementById('registerBtn').onclick = function() {
+            if(confirm('退出？')) {
+                document.getElementById('loginBtn').innerHTML = '<i class="fas fa-user"></i> 登录';
+                document.getElementById('loginBtn').className = 'btn-outline';
+                document.getElementById('registerBtn').textContent = '注册';
+                document.getElementById('registerBtn').onclick = ()=>openAuth('register');
+                alert('已退出');
+            }
+        };
+    }
+    function handleRegister() {
+        alert('🎉 注册成功！请登录');
+        switchAuth('login');
+    }
+
+    // ============================================================
+    // 2. GIS地图模块
+    // ============================================================
+    let map = null;
+    let startMarker = null;
+    let endMarker = null;
+    let routePolyline = null;
+    let startLocation = null;
+    let endLocation = null;
+    let currentRoute = null;
+    let isSettingStart = false;
+    let isSettingEnd = false;
+    let routeType = 'driving';
+
+    const CONFIG = {
+        BAIDU_AK: 'jc7vUOgLbcBFef6gWTeR9xpxxGIBpoxA',
+        OSRM_URL: 'https://router.project-osrm.org/route/v1'
+    };
+
+    function initBaiduMap() {
+        map = new BMap.Map("map");
+        const point = new BMap.Point(101.0, 27.0);
+        map.centerAndZoom(point, 7);
+        map.enableScrollWheelZoom(true);
+        map.addControl(new BMap.ScaleControl({anchor: BMAP_ANCHOR_BOTTOM_LEFT}));
+        map.addControl(new BMap.NavigationControl());
+
+        map.addEventListener("mousemove", function(e) {
+            document.getElementById('coordinates').innerHTML = `经度: ${e.point.lng.toFixed(4)}, 纬度: ${e.point.lat.toFixed(4)}`;
+        });
+
+        map.addEventListener("click", function(e) {
+            if (isSettingStart) {
+                const name = prompt('起点名称:', '起点') || '起点';
+                setStartLocation(e.point, name);
+                isSettingStart = false;
+                showRouteStatus(`📍 起点已设置: ${name}`);
+            } else if (isSettingEnd) {
+                const name = prompt('终点名称:', '终点') || '终点';
+                setEndLocation(e.point, name);
+                isSettingEnd = false;
+                showRouteStatus(`📍 终点已设置: ${name}`);
+            }
+        });
+    }
+
+    function setStartLocation(point, name) {
+        if (startMarker) map.removeOverlay(startMarker);
+        startMarker = new BMap.Marker(point);
+        startMarker.setLabel(new BMap.Label(name || '起点', {offset: new BMap.Size(-15, 30)}));
+        map.addOverlay(startMarker);
+        startLocation = { point, name: name || '起点' };
+        document.getElementById('start-location').value = name || '起点';
+        showRouteStatus('起点已设置');
+    }
+
+    function setEndLocation(point, name) {
+        if (endMarker) map.removeOverlay(endMarker);
+        endMarker = new BMap.Marker(point);
+        endMarker.setLabel(new BMap.Label(name || '终点', {offset: new BMap.Size(-15, 30)}));
+        map.addOverlay(endMarker);
+        endLocation = { point, name: name || '终点' };
+        document.getElementById('end-location').value = name || '终点';
+        showRouteStatus('终点已设置');
+    }
+
+    function showRouteStatus(msg, type = 'info') {
+        const el = document.getElementById('route-status');
+        el.textContent = msg;
+        el.style.background = type === 'error' ? '#f8d7da' : '#d1ecf1';
+        el.style.color = type === 'error' ? '#721c24' : '#0c5460';
+    }
+
+    function clearRoute() {
+        if (startMarker) map.removeOverlay(startMarker);
+        if (endMarker) map.removeOverlay(endMarker);
+        if (routePolyline) map.removeOverlay(routePolyline);
+        startMarker = endMarker = routePolyline = null;
+        startLocation = endLocation = null;
+        currentRoute = null;
+        document.getElementById('start-location').value = '';
+        document.getElementById('end-location').value = '';
+        showRouteStatus('路线已清除');
+    }
+
+    function setRouteType(type) {
+        routeType = type;
+        document.querySelectorAll('.route-type-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.type === type);
+        });
+    }
+
+    async function planRoute() {
+        const startName = document.getElementById('start-location').value.trim();
+        const endName = document.getElementById('end-location').value.trim();
+        if (!startName || !endName) { showRouteStatus('请输入起点和终点', 'error'); return; }
+
+        try {
+            showRouteStatus('正在搜索地点...');
+            const [startResult, endResult] = await Promise.all([
+                baiduGeocode(startName),
+                baiduGeocode(endName)
+            ]);
+            if (startResult && endResult) {
+                setStartLocation(startResult.point, startResult.name);
+                setEndLocation(endResult.point, endResult.name);
+                await planRouteOSRM(startResult.point, endResult.point);
+            }
+        } catch(e) {
+            showRouteStatus('规划失败: ' + e.message, 'error');
+        }
+    }
+
+    function baiduGeocode(query) {
+        return new Promise((resolve, reject) => {
+            const myGeo = new BMap.Geocoder();
+            myGeo.getPoint(query, function(point) {
+                if (point) resolve({ name: query, point });
+                else reject(new Error('未找到该地点'));
+            }, "全国");
+        });
+    }
+
+    async function planRouteOSRM(startPoint, endPoint) {
+        const profile = routeType;
+        const url = `${CONFIG.OSRM_URL}/${profile}/${startPoint.lng},${startPoint.lat};${endPoint.lng},${endPoint.lat}?overview=full&geometries=geojson`;
+        showRouteStatus('正在计算路线...');
+
+        try {
+            const resp = await fetch(url);
+            const data = await resp.json();
+            if (data.code === 'Ok' && data.routes.length > 0) {
+                const route = data.routes[0];
+                currentRoute = {
+                    geometry: route.geometry,
+                    distance: route.distance / 1000,
+                    duration: route.duration
+                };
+                displayRoute(currentRoute);
+                showRouteStatus(`✅ 路线完成！距离 ${currentRoute.distance.toFixed(1)}km，预计 ${formatDuration(currentRoute.duration)}`);
+                zoomToRoute();
+            } else {
+                throw new Error('无法计算路线');
+            }
+        } catch(e) {
+            throw new Error(`OSRM错误: ${e.message}`);
+        }
+    }
+
+    function displayRoute(route) {
+        if (routePolyline) map.removeOverlay(routePolyline);
+        const points = route.geometry.coordinates.map(c => new BMap.Point(c[0], c[1]));
+        routePolyline = new BMap.Polyline(points, {
+            strokeColor: routeType === 'driving' ? '#1e5799' : (routeType === 'walking' ? '#4CAF50' : '#FF9800'),
+            strokeWeight: 5,
+            strokeOpacity: 0.8
+        });
+        map.addOverlay(routePolyline);
+    }
+
+    function zoomToRoute() {
+        if (startLocation && endLocation) {
+            const bounds = new BMap.Bounds();
+            bounds.extend(startLocation.point);
+            bounds.extend(endLocation.point);
+            map.setViewport([bounds.getSouthWest(), bounds.getNorthEast()]);
+        }
+    }
+
+    function formatDuration(sec) {
+        const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+        return h > 0 ? `${h}h${m}min` : `${m}min`;
+    }
+
+    // ============================================================
+    // 3. 初始化
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', function() {
+        initBaiduMap();
+
+        document.querySelectorAll('.route-type-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                setRouteType(this.dataset.type);
+            });
+        });
+
+        document.getElementById('plan-route').addEventListener('click', planRoute);
+        document.getElementById('clear-route').addEventListener('click', clearRoute);
+
+        document.getElementById('set-start').addEventListener('click', function(e) {
+            e.preventDefault();
+            isSettingStart = true;
+            isSettingEnd = false;
+            showRouteStatus('点击地图设置起点');
+        });
+        document.getElementById('set-end').addEventListener('click', function(e) {
+            e.preventDefault();
+            isSettingStart = false;
+            isSettingEnd = true;
+            showRouteStatus('点击地图设置终点');
+        });
+
+        document.getElementById('start-location').addEventListener('keypress', e => { if(e.key === 'Enter') document.getElementById('end-location').focus(); });
+        document.getElementById('end-location').addEventListener('keypress', e => { if(e.key === 'Enter') planRoute(); });
+
+        // 预设示例
+        setTimeout(() => {
+            document.getElementById('start-location').value = '香格里拉';
+            document.getElementById('end-location').value = '昆明';
+            showRouteStatus('💡 点击"规划路线"查看从香格里拉到昆明的路线');
+        }, 500);
+    });
+</script>
+</body>
+</html>
